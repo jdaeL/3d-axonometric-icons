@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Axonometries 3D</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .header {
+            text-align: center;
+            padding: 3rem 2rem;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            padding: 3rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .model-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .model-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .model-viewer {
+            width: 100%;
+            height: 300px;
+            position: relative;
+            background: radial-gradient(circle, #2a2a2a 0%, #1a1a1a 100%);
+        }
+
+        .model-info {
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .model-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+
+        .model-description {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            line-height: 1.4;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ffffff;
+            font-size: 1rem;
+        }
+
+        .loading::after {
+            content: "";
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            color: #ff6b6b;
+            font-size: 0.9rem;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .controls-hint {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 1rem;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            max-width: 250px;
+            backdrop-filter: blur(10px);
+        }
+
+        @media (max-width: 768px) {
+            .gallery {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+                padding: 2rem 1rem;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .controls-hint {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Axonometries 3D</h1>
+        <p>Haz clic y arrastra para rotar, scroll para zoom.</p>
+    </div>
+
+    <div class="gallery" id="gallery"></div>
+
+    <div class="controls-hint">
+        <strong>Controles:</strong><br>
+        • Clic + Arrastrar: Rotar<br>
+        • Scroll: Zoom<br>
+        • Clic derecho + Arrastrar: Panorámica
+    </div>
+
+    <script>
+        const models = [
+            {
+                file: "1ra AXONOMETRIA_YEAR SELECTOR.glb",
+                title: "Year Selector",
+                description: "Selector interactivo de años con diseño axonométrico"
+            },
+            {
+                file: "2da AXONOMETRIA_DONUT CHART.glb",
+                title: "Donut Chart",
+                description: "Visualización de datos en forma de gráfico de dona"
+            },
+            {
+                file: "3ra AXONOMETRIA_PYE CHART.glb",
+                title: "Pie Chart", 
+                description: "Representación axonométrica de gráfico circular"
+            },
+            {
+                file: "4ta AXONOMETRIA_AIR TABLE.glb",
+                title: "Air Table",
+                description: "Mesa de datos flotante con perspectiva axonométrica"
+            },
+            {
+                file: "5ta AXONOMETRIA_EXCEL CALCULATOR.glb",
+                title: "Excel Calculator",
+                description: "Calculadora estilo Excel en vista tridimensional"
+            },
+            {
+                file: "6ta AXONOMETRIA_EXCELL.glb",
+                title: "Excel Interface",
+                description: "Interfaz de Excel renderizada axonométricamente"
+            },
+            {
+                file: "7ma AXONOMETRIA_WEB CALCULATOR.glb",
+                title: "Web Calculator",
+                description: "Calculadora web con diseño axonométrico moderno"
+            },
+            {
+                file: "8va AXONOMETRIA_BAR CHART.glb",
+                title: "Bar Chart",
+                description: "Gráfico de barras tridimensional interactivo"
+            },
+            {
+                file: "9na AXONOMETRIA_IMPUT TABLE.glb",
+                title: "Input Table",
+                description: "Tabla de entrada de datos con perspectiva 3D"
+            },
+            {
+                file: "10ma AXONOMETRIA_OUTPUT TABLE.glb",
+                title: "Output Table",
+                description: "Tabla de resultados en formato axonométrico"
+            }
+        ];
+
+        class ModelViewer {
+            constructor(container, modelPath, title) {
+                this.container = container;
+                this.modelPath = modelPath;
+                this.title = title;
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.controls = null;
+                this.model = null;
+                
+                this.init();
+            }
+
+            init() {
+                // Crear escena
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x2a2a2a);
+
+                // Crear cámara
+                const width = this.container.clientWidth;
+                const height = this.container.clientHeight;
+                this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+                this.camera.position.set(5, 5, 5);
+
+                // Crear renderer
+                this.renderer = new THREE.WebGLRenderer({ antialias: true });
+                this.renderer.setSize(width, height);
+                this.renderer.setClearColor(0x2a2a2a);
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                
+                this.container.appendChild(this.renderer.domElement);
+
+                // Agregar luces
+                this.setupLights();
+
+                // Configurar controles
+                this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+                this.controls.enableDamping = true;
+                this.controls.dampingFactor = 0.05;
+                this.controls.enableZoom = true;
+                this.controls.enablePan = true;
+
+                // Cargar modelo
+                this.loadModel();
+
+                // Iniciar loop de render
+                this.animate();
+
+                // Hacer responsive
+                window.addEventListener('resize', () => this.onWindowResize());
+            }
+
+            setupLights() {
+                // Luz ambiental
+                const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+                this.scene.add(ambientLight);
+
+                // Luz direccional principal
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                directionalLight.position.set(10, 10, 5);
+                directionalLight.castShadow = true;
+                directionalLight.shadow.mapSize.width = 2048;
+                directionalLight.shadow.mapSize.height = 2048;
+                this.scene.add(directionalLight);
+
+                // Luz de relleno
+                const fillLight = new THREE.DirectionalLight(0x4080ff, 0.3);
+                fillLight.position.set(-5, 0, -5);
+                this.scene.add(fillLight);
+            }
+
+            loadModel() {
+                const loader = new THREE.GLTFLoader();
+                const loadingElement = this.container.querySelector('.loading');
+
+                loader.load(
+                    `axonometrias/${this.modelPath}`,
+                    (gltf) => {
+                        this.model = gltf.scene;
+                        
+                        // Centrar modelo
+                        const box = new THREE.Box3().setFromObject(this.model);
+                        const center = box.getCenter(new THREE.Vector3());
+                        this.model.position.sub(center);
+
+                        // Escalar modelo apropiadamente
+                        const size = box.getSize(new THREE.Vector3());
+                        const maxDim = Math.max(size.x, size.y, size.z);
+                        const scale = 3 / maxDim;
+                        this.model.scale.setScalar(scale);
+
+                        // Configurar sombras
+                        this.model.traverse((child) => {
+                            if (child.isMesh) {
+                                child.castShadow = true;
+                                child.receiveShadow = true;
+                            }
+                        });
+
+                        this.scene.add(this.model);
+                        
+                        if (loadingElement) {
+                            loadingElement.style.display = 'none';
+                        }
+                    },
+                    (progress) => {
+                        // Progreso de carga
+                        const percent = (progress.loaded / progress.total * 100).toFixed(0);
+                        if (loadingElement) {
+                            loadingElement.textContent = `Cargando ${percent}%`;
+                        }
+                    },
+                    (error) => {
+                        console.error(`Error cargando ${this.modelPath}:`, error);
+                        if (loadingElement) {
+                            loadingElement.innerHTML = `<div class="error">Error al cargar<br>${this.title}</div>`;
+                        }
+                    }
+                );
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                this.controls.update();
+                this.renderer.render(this.scene, this.camera);
+            }
+
+            onWindowResize() {
+                const width = this.container.clientWidth;
+                const height = this.container.clientHeight;
+                
+                this.camera.aspect = width / height;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(width, height);
+            }
+        }
+
+        // Crear galería
+        function createGallery() {
+            const gallery = document.getElementById('gallery');
+
+            models.forEach((model, index) => {
+                const card = document.createElement('div');
+                card.className = 'model-card';
+                
+                card.innerHTML = `
+                    <div class="model-viewer" id="viewer-${index}">
+                        <div class="loading">Cargando modelo...</div>
+                    </div>
+                    <div class="model-info">
+                        <div class="model-title">${model.title}</div>
+                        <div class="model-description">${model.description}</div>
+                    </div>
+                `;
+
+                gallery.appendChild(card);
+
+                // Inicializar visor 3D
+                setTimeout(() => {
+                    const container = document.getElementById(`viewer-${index}`);
+                    new ModelViewer(container, model.file, model.title);
+                }, index * 200); // Cargar modelos de forma escalonada
+            });
+        }
+
+        // Inicializar cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', createGallery);
+    </script>
+</body>
+</html>
